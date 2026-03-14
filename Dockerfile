@@ -1,13 +1,21 @@
 FROM python:3.10-slim
 
-RUN apt-get update && apt-get install -y awscli
+# Install AWS CLI nhẹ nhàng và dọn cache
+RUN apt-get update && apt-get install -y --no-install-recommends awscli \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
-COPY . /app
+# Copy only requirements first → cache tốt hơn
+COPY requirements.txt /app/
 
-RUN pip install -r requirements.txt
-RUN pip install --upgrade accelerate
-RUN pip uninstall -y transformers accelerate
-RUN pip install transformers accelerate
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt \
+    && pip install --no-cache-dir --upgrade accelerate \
+    && pip uninstall -y transformers accelerate \
+    && pip install --no-cache-dir transformers accelerate
+
+# Copy rest of the code
+COPY . /app
 
 CMD ["python3", "app.py"]
